@@ -14,18 +14,21 @@
 Se simula el funcionamiento de un Centro de Apoyo Escolar usando
 SimPy (Simulacion de Eventos Discretos). El objetivo es ver si la
 cantidad de voluntarios y profesionales alcanza para cubrir la demanda
-de niños que llegan con dificultades de aprendizaje.
+de niños que llegan con dificultades de aprendizaje, y validar la
+logica de asignacion antes de implementarla en software real.
 
 ### Que se modela
 
-- **Niños**: llegan al azar (Poisson), cada uno con una dificultad
-  (Leve/Moderada/Grave) y un area (Matematica/Lectura/Grafismo).
-- **Voluntarios**: tienen un nivel de expertise (1-3) y un area.
+- **Niños (entidades)**: llegan al azar (proceso de Poisson), cada uno con
+  una dificultad (Leve/Moderada/Grave) y un area (Matematica/Lectura/Grafismo),
+  asignadas con distribuciones de probabilidad configurables.
+- **Voluntarios (recursos)**: tienen un nivel de expertise (1-3) y un area.
   Cuando estan ocupados no pueden atender a otro niño.
-- **Equipo Profesional**: evalua a cada niño antes de asignarle
+- **Equipo Profesional (servidor)**: evalua a cada niño antes de asignarle
   voluntario. Son pocos, asi que pueden generar cuello de botella.
 - **Matching**: se busca un voluntario cuyo nivel sea >= la dificultad
-  del niño y que coincida en el area.
+  del niño y que coincida en el area. Si no hay match exacto, se puede
+  asignar un generalista (politica flexible) o el niño espera (politica estricta).
 
 ### Escenarios
 
@@ -35,9 +38,13 @@ de niños que llegan con dificultades de aprendizaje.
 | A - Deficit | Muchos niños graves, pocos voluntarios basicos, 1 profesional |
 | B - Crecimiento | 200% mas de matricula, mismos recursos |
 
+Ademas se comparan las dos politicas de asignacion:
+- **Generalista**: si no hay match optimo, se asigna cualquier voluntario libre.
+- **Estricto**: el niño espera hasta que haya un voluntario adecuado (o se va).
+
 ### KPIs que mide
 
-1. Tiempo promedio de espera en cola
+1. Tiempo promedio de espera en cola (desglosado por dificultad)
 2. Tasa de mal matching (% de asignaciones no optimas)
 3. Ocupacion de cada voluntario
 4. Ocupacion del Equipo Profesional
@@ -51,4 +58,4 @@ python simulacion_apoyo_escolar.py
 
 ### Tecnologias
 - Python 3
-- SimPy
+- SimPy 4

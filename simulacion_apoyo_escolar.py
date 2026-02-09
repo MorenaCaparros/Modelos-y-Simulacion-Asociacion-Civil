@@ -12,10 +12,11 @@ Se simula el sistema de una Asociacion Civil que asigna voluntarios
 a niños con dificultades de aprendizaje. Un Equipo Profesional evalua
 a cada niño y luego se busca un voluntario adecuado (matching).
 
-Se prueban 3 escenarios:
+Se prueban 3 escenarios + comparacion de politicas:
   - Base: operacion normal
   - A: deficit de recursos (muchos niños graves, pocos voluntarios)
   - B: crecimiento del 200% en la matricula
+  - Comparacion: generalista vs espera estricta (sin generalista)
 """
 
 import simpy
@@ -32,12 +33,18 @@ resultados_match = []        # tipo de match de cada asignacion
 tiempo_uso_prof = 0          # tiempo acumulado usando el eq. profesional
 ninos_llegaron = 0
 ninos_atendidos = 0
+ninos_no_atendidos = 0       # los que se fueron sin voluntario (politica estricta)
+
+# Colas diferenciadas por dificultad (para el reporte)
+espera_por_dificultad = {1: [], 2: [], 3: []}
 
 
 def resetear_estadisticas():
     """Limpia las estadisticas para un nuevo escenario."""
     global tiempos_espera, tiempos_espera_prof, tiempos_espera_vol
-    global resultados_match, tiempo_uso_prof, ninos_llegaron, ninos_atendidos
+    global resultados_match, tiempo_uso_prof
+    global ninos_llegaron, ninos_atendidos, ninos_no_atendidos
+    global espera_por_dificultad
     tiempos_espera = []
     tiempos_espera_prof = []
     tiempos_espera_vol = []
@@ -45,6 +52,8 @@ def resetear_estadisticas():
     tiempo_uso_prof = 0
     ninos_llegaron = 0
     ninos_atendidos = 0
+    ninos_no_atendidos = 0
+    espera_por_dificultad = {1: [], 2: [], 3: []}
 
 
 # -- Funciones auxiliares --
@@ -122,10 +131,14 @@ def proceso_nino(env, nombre, dificultad, area, equipo_prof, voluntarios,
     2. Se le busca un voluntario (matching)
     3. Recibe la intervencion pedagogica
     4. El voluntario queda libre
+
+    Si la politica es estricta (permitir_generalista=False) y no hay
+    match exacto, el niño espera un maximo de semanas antes de irse.
     """
-    global tiempo_uso_prof, ninos_llegaron, ninos_atendidos
+    global tiempo_uso_prof, ninos_llegaron, ninos_atendidos, ninos_no_atendidos
     ninos_llegaron += 1
     t_inicio = env.now
+    max_espera_vol = config.get("max_espera_vol", 8)  # semanas maximo buscando
 
     print(f"  [{env.now:5.1f} sem] {nombre} llega - "
           f"Dificultad: {nombre_dificultad(dificultad)}, Area: {area}")
@@ -147,7 +160,7 @@ def proceso_nino(env, nombre, dificultad, area, equipo_prof, voluntarios,
         tiempo_uso_prof += duracion_eval
         yield env.timeout(duracion_eval)
 
-    # Fase 2: Buscar voluntario
+    # Fase 2: Buscar voluntario (cola diferenciada por dificultad)
     t_pre = env.now
     vol_asignado = None
     tipo_match = None
@@ -157,10 +170,18 @@ def proceso_nino(env, nombre, dificultad, area, equipo_prof, voluntarios,
             voluntarios, dificultad, area, config["permitir_generalista"]
         )
         if vol_asignado is None:
+            # Si ya espero demasiado, se va sin atencion
+            if (env.now - t_pre) >= max_espera_vol:
+                ninos_no_atendidos += 1
+                espera_por_dificultad[dificultad].append(env.now - t_pre)
+                print(f"  [{env.now:5.1f} sem] {nombre} se fue sin voluntario "
+                      f"(espero {env.now - t_pre:.1f} sem)")
+                return
             yield env.timeout(0.25)  # espera y reintenta
 
     espera_vol = env.now - t_pre
     tiempos_espera_vol.append(espera_vol)
+    espera_por_dificultad[dificultad].append(espera_vol)
     vol_asignado["ocupado"] = True
     resultados_match.append(tipo_match)
 
@@ -219,7 +240,8 @@ def imprimir_reporte(config, voluntarios):
 
     print(f"\n  Niños que llegaron:   {ninos_llegaron}")
     print(f"  Niños atendidos:      {ninos_atendidos}")
-    print(f"  En proceso al cierre: {ninos_llegaron - ninos_atendidos}")
+    print(f"  Se fueron sin atencion: {ninos_no_atendidos}")
+    print(f"  En proceso al cierre: {ninos_llegaron - ninos_atendidos - ninos_no_atendidos}")
 
     # KPI 1: Espera en cola
     if tiempos_espera:
@@ -234,6 +256,17 @@ def imprimir_reporte(config, voluntarios):
         print(f"    (por Eq. Prof: {statistics.mean(tiempos_espera_prof):.2f} sem)")
     if tiempos_espera_vol:
         print(f"    (por Voluntario: {statistics.mean(tiempos_espera_vol):.2f} sem)")
+
+    # Cola diferenciada por dificultad (seccion 4.1 del anteproyecto)
+    print(f"\n    Espera por nivel de dificultad (cola para voluntario):")
+    for d in [1, 2, 3]:
+        lista = espera_por_dificultad[d]
+        if lista:
+            prom_d = statistics.mean(lista)
+            print(f"      {nombre_dificultad(d):>8}: {prom_d:.2f} sem prom "
+                  f"({len(lista)} niños)")
+        else:
+            print(f"      {nombre_dificultad(d):>8}: sin datos")
 
     # KPI 2: Tasa de mal matching
     total = len(resultados_match)
@@ -290,6 +323,7 @@ def imprimir_reporte(config, voluntarios):
         "nombre": config["nombre"],
         "llegaron": ninos_llegaron,
         "atendidos": ninos_atendidos,
+        "no_atendidos": ninos_no_atendidos,
         "espera_prom": prom,
         "espera_max": maxi,
         "mal_matching": tasa_mal,
@@ -347,6 +381,7 @@ def tabla_comparativa(resultados):
     filas = [
         ("Niños llegaron", "llegaron", "{:.0f}"),
         ("Niños atendidos", "atendidos", "{:.0f}"),
+        ("Sin atencion", "no_atendidos", "{:.0f}"),
         ("Espera prom (sem)", "espera_prom", "{:.2f}"),
         ("Espera max (sem)", "espera_max", "{:.2f}"),
         ("Mal matching (%)", "mal_matching", "{:.1f}"),
@@ -433,6 +468,21 @@ ESCENARIO_B = {
     "permitir_generalista": True,
 }
 
+# Escenario extra: Base con politica estricta (sin generalista)
+# Seccion 4.2 del anteproyecto: comparar ambas politicas de asignacion
+ESCENARIO_BASE_ESTRICTO = {
+    "nombre": "Base (Estricto)",
+    "tiempo_simulacion": 52,
+    "semilla": 42,
+    "tasa_llegada": 3.0,
+    "prob_dificultad": [0.50, 0.35, 0.15],
+    "prob_area": [0.45, 0.35, 0.20],
+    "voluntarios_spec": VOLUNTARIOS_BASE,
+    "num_profesionales": 2,
+    "permitir_generalista": False,          # sin generalista: el niño espera o se va
+    "max_espera_vol": 6,                    # maximo 6 semanas buscando
+}
+
 
 # -- Main --
 
@@ -441,12 +491,22 @@ def main():
     print("  Centro de Apoyo Escolar")
     print("  Universidad Catolica de Salta\n")
 
-    resultados = []
+    # Parte 1: Los 3 escenarios del anteproyecto (todos con generalista)
+    resultados_escenarios = []
     for escenario in [ESCENARIO_BASE, ESCENARIO_A, ESCENARIO_B]:
         kpis = ejecutar_escenario(escenario)
-        resultados.append(kpis)
+        resultados_escenarios.append(kpis)
 
-    tabla_comparativa(resultados)
+    tabla_comparativa(resultados_escenarios)
+
+    # Parte 2: Comparacion de politicas (generalista vs estricto)
+    print(f"\n  {'=' * 55}")
+    print(f"  COMPARACION DE POLITICAS DE ASIGNACION")
+    print(f"  (Seccion 4.2 - Generalista vs Espera Estricta)")
+    print(f"  {'=' * 55}")
+
+    kpis_estricto = ejecutar_escenario(ESCENARIO_BASE_ESTRICTO)
+    tabla_comparativa([resultados_escenarios[0], kpis_estricto])
 
 
 if __name__ == "__main__":

@@ -1,8 +1,6 @@
 """
-=============================================================================
  Modelos y Simulación — Trabajo Práctico
  Simulación de Eventos Discretos: Centro de Apoyo Escolar (Asociación Civil)
-=============================================================================
 
  Universidad:  Universidad Católica de Salta
  Carrera:      Licenciatura en Ciencia de Datos

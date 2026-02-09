@@ -51,11 +51,22 @@ Ademas se comparan las dos politicas de asignacion:
 
 ### Como correrlo
 
+**Simulacion por consola:**
 ```bash
 pip install -r requirements.txt
 python simulacion_apoyo_escolar.py
 ```
 
+**Dashboard visual (Streamlit):**
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+Se abre en el navegador en `http://localhost:8501`. Desde ahi se pueden
+elegir escenarios predefinidos o ajustar parametros custom con sliders.
+
 ### Tecnologias
 - Python 3
 - SimPy 4
+- Streamlit (dashboard)
+- Pandas (tablas)

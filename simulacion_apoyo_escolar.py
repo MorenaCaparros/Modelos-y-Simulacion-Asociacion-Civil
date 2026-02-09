@@ -486,6 +486,111 @@ ESCENARIO_BASE_ESTRICTO = {
 
 # -- Main --
 
+def correr_simulacion(config, silencioso=False):
+    """
+    Corre un escenario y devuelve todos los KPIs como diccionario.
+    Si silencioso=True, no imprime nada (para usar desde Streamlit).
+    """
+    resetear_estadisticas()
+    random.seed(config["semilla"])
+
+    if not silencioso:
+        print(f"\n  {'=' * 55}")
+        print(f"  ESCENARIO: {config['nombre']}")
+        print(f"  {'=' * 55}")
+
+    env = simpy.Environment()
+    equipo_prof = simpy.Resource(env, capacity=config["num_profesionales"])
+
+    voluntarios = []
+    for v in config["voluntarios_spec"]:
+        voluntarios.append({
+            "nombre": v["nombre"],
+            "expertise": v["expertise"],
+            "area": v["area"],
+            "ocupado": False,
+            "tiempo_ocupado": 0,
+        })
+
+    # Guardar prints originales y silenciar si hace falta
+    if silencioso:
+        import io, sys
+        _stdout = sys.stdout
+        sys.stdout = io.StringIO()
+
+    env.process(llegada_ninos(env, equipo_prof, voluntarios, config))
+    env.run(until=config["tiempo_simulacion"])
+
+    if silencioso:
+        sys.stdout = _stdout
+
+    T = config["tiempo_simulacion"]
+
+    # Calcular KPIs
+    if tiempos_espera:
+        prom = statistics.mean(tiempos_espera)
+        maxi = max(tiempos_espera)
+    else:
+        prom = maxi = 0
+
+    total_match = len(resultados_match)
+    if total_match > 0:
+        optimos = resultados_match.count("OPTIMO")
+        suboptimos = resultados_match.count("SUBOPTIMO")
+        generalistas = resultados_match.count("GENERALISTA")
+        tasa_mal = ((suboptimos + generalistas) / total_match) * 100
+    else:
+        optimos = suboptimos = generalistas = 0
+        tasa_mal = 0
+
+    total_vol = sum(v["tiempo_ocupado"] for v in voluntarios)
+    ocup_vol = (total_vol / (len(voluntarios) * T)) * 100 if T > 0 else 0
+
+    cap_prof = config["num_profesionales"] * T
+    ocup_prof = (tiempo_uso_prof / cap_prof) * 100 if cap_prof > 0 else 0
+
+    # Espera por dificultad
+    espera_dif = {}
+    for d in [1, 2, 3]:
+        lista = espera_por_dificultad[d]
+        espera_dif[nombre_dificultad(d)] = {
+            "promedio": statistics.mean(lista) if lista else 0,
+            "cantidad": len(lista),
+        }
+
+    # Ocupacion individual de voluntarios
+    vol_ocup = []
+    for v in voluntarios:
+        pct = (v["tiempo_ocupado"] / T) * 100 if T > 0 else 0
+        vol_ocup.append({
+            "nombre": v["nombre"],
+            "expertise": v["expertise"],
+            "area": v["area"],
+            "ocupacion": round(pct, 1),
+        })
+
+    return {
+        "nombre": config["nombre"],
+        "llegaron": ninos_llegaron,
+        "atendidos": ninos_atendidos,
+        "no_atendidos": ninos_no_atendidos,
+        "en_proceso": ninos_llegaron - ninos_atendidos - ninos_no_atendidos,
+        "espera_prom": round(prom, 2),
+        "espera_max": round(maxi, 2),
+        "espera_prof": round(statistics.mean(tiempos_espera_prof), 2) if tiempos_espera_prof else 0,
+        "espera_vol": round(statistics.mean(tiempos_espera_vol), 2) if tiempos_espera_vol else 0,
+        "espera_por_dificultad": espera_dif,
+        "optimos": optimos,
+        "suboptimos": suboptimos,
+        "generalistas": generalistas,
+        "total_match": total_match,
+        "mal_matching": round(tasa_mal, 1),
+        "ocup_vol": round(ocup_vol, 1),
+        "ocup_prof": round(ocup_prof, 1),
+        "voluntarios": vol_ocup,
+    }
+
+
 def main():
     print("\n  MODELOS Y SIMULACION - ASOCIACION CIVIL")
     print("  Centro de Apoyo Escolar")

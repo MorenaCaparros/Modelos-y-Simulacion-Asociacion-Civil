@@ -1,49 +1,54 @@
-# Modelos y Simulación — Asociación Civil
+# Modelos y Simulacion - Asociacion Civil
 
-## Simulación de Eventos Discretos: Centro de Apoyo Escolar
+## Centro de Apoyo Escolar - Simulacion
 
-**Universidad Católica de Salta** — Licenciatura en Ciencia de Datos  
-**Materia:** Modelos y Simulación  
+**Universidad Catolica de Salta** - Lic. en Ciencia de Datos  
+**Materia:** Modelos y Simulacion  
 **Docente:** Gustavo Ramiro Rivadera  
 **Alumno:** Morena Caparros  
 
 ---
 
-### Descripción
+### De que trata
 
-Este proyecto implementa un modelo de **Simulación de Eventos Discretos (DES)** con **SimPy** para validar la lógica de asignación y la capacidad operativa del Centro de Apoyo Escolar de una Asociación Civil, antes de su informatización definitiva.
+Se simula el funcionamiento de un Centro de Apoyo Escolar usando
+SimPy (Simulacion de Eventos Discretos). El objetivo es ver si la
+cantidad de voluntarios y profesionales alcanza para cubrir la demanda
+de niños que llegan con dificultades de aprendizaje.
 
-### Componentes modelados
+### Que se modela
 
-| Componente | Descripción |
+- **Niños**: llegan al azar (Poisson), cada uno con una dificultad
+  (Leve/Moderada/Grave) y un area (Matematica/Lectura/Grafismo).
+- **Voluntarios**: tienen un nivel de expertise (1-3) y un area.
+  Cuando estan ocupados no pueden atender a otro niño.
+- **Equipo Profesional**: evalua a cada niño antes de asignarle
+  voluntario. Son pocos, asi que pueden generar cuello de botella.
+- **Matching**: se busca un voluntario cuyo nivel sea >= la dificultad
+  del niño y que coincida en el area.
+
+### Escenarios
+
+| Escenario | Que prueba |
 |---|---|
-| **Niños** (entidades de flujo) | Atributos aleatorios: Dificultad (Leve/Moderada/Grave) y Área (Matemática/Lectura/Grafismo) |
-| **Voluntarios** (recursos) | Clasificados por Nivel de Expertise (1-3) y Área de competencia |
-| **Equipo Profesional** (servidor) | Recurso limitado que evalúa y valida cada asignación (cuello de botella) |
-| **Algoritmo de Matching** | Regla: Skill >= Dificultad en el área correcta. Política configurable: estricto vs. generalista |
+| Base | Operacion normal: 3 niños/sem, 8 voluntarios, 2 profesionales |
+| A - Deficit | Muchos niños graves, pocos voluntarios basicos, 1 profesional |
+| B - Crecimiento | 200% mas de matricula, mismos recursos |
 
-### Escenarios de prueba (Sección 4.3 del anteproyecto)
+### KPIs que mide
 
-| Escenario | Descripción |
-|---|---|
-| **Base** | Operación normal: 3 niños/semana, 8 voluntarios, 2 profesionales |
-| **A — Déficit** | Alta demanda (5 niños/sem), mayoría graves, 4 voluntarios básicos, 1 profesional |
-| **B — Crecimiento** | Aumento 200% en matrícula (9 niños/sem), mismos recursos |
+1. Tiempo promedio de espera en cola
+2. Tasa de mal matching (% de asignaciones no optimas)
+3. Ocupacion de cada voluntario
+4. Ocupacion del Equipo Profesional
 
-### KPIs medidos
-
-1. **Tiempo promedio de espera en cola** antes de recibir asignación.
-2. **Tasa de Mal Matching** — % de niños atendidos por voluntarios no óptimos.
-3. **Ocupación de Voluntarios** — desglosada por voluntario individual.
-4. **Ocupación del Equipo Profesional** — detecta saturación del servidor.
-
-### Instalación y ejecución
+### Como correrlo
 
 ```bash
 pip install -r requirements.txt
 python simulacion_apoyo_escolar.py
 ```
 
-### Tecnologías
-- Python 3.10+
-- [SimPy 4.x](https://simpy.readthedocs.io/) — Simulación de Eventos Discretos
+### Tecnologias
+- Python 3
+- SimPy

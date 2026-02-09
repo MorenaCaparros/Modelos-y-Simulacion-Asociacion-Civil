@@ -57,13 +57,15 @@ pip install -r requirements.txt
 python simulacion_apoyo_escolar.py
 ```
 
-**Dashboard visual (Streamlit):**
+**Dashboard visual (Streamlit) — opcional:**
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
-Se abre en el navegador en `http://localhost:8501`. Desde ahi se pueden
-elegir escenarios predefinidos o ajustar parametros custom con sliders.
+> **Nota:** El archivo `app.py` es solo un agregado visual para explorar
+> los resultados de forma interactiva. No es parte del contenido evaluable
+> del trabajo; toda la simulacion y los resultados se obtienen ejecutando
+> `simulacion_apoyo_escolar.py` por consola.
 
 ### Tecnologias
 - Python 3

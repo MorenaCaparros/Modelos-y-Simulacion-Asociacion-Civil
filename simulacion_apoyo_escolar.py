@@ -12,10 +12,12 @@ Se simula el sistema de una Asociacion Civil que asigna voluntarios
 a niños con dificultades de aprendizaje. Un Equipo Profesional evalua
 a cada niño y luego se busca un voluntario adecuado (matching).
 
-Se prueban 3 escenarios + comparacion de politicas:
+Se prueban 5 escenarios + comparacion de politicas:
   - Base: operacion normal
   - A: deficit de recursos (muchos niños graves, pocos voluntarios)
   - B: crecimiento del 200% en la matricula
+  - C: equipo reforzado (voluntarios expertos, mas profesionales)
+  - D: demanda baja (pocos niños, mayoria leves)
   - Comparacion: generalista vs espera estricta (sin generalista)
 """
 
@@ -468,6 +470,49 @@ ESCENARIO_B = {
     "permitir_generalista": True,
 }
 
+# Escenario C: Equipo reforzado - voluntarios expertos cubriendo bien todas
+# las areas + mas profesionales + tasa moderada. Mal matching bajo.
+VOLUNTARIOS_REFORZADOS = [
+    {"nombre": "Vol-01", "expertise": 3, "area": "matematica"},
+    {"nombre": "Vol-02", "expertise": 3, "area": "matematica"},
+    {"nombre": "Vol-03", "expertise": 2, "area": "matematica"},
+    {"nombre": "Vol-04", "expertise": 1, "area": "matematica"},
+    {"nombre": "Vol-05", "expertise": 3, "area": "lectura"},
+    {"nombre": "Vol-06", "expertise": 3, "area": "lectura"},
+    {"nombre": "Vol-07", "expertise": 2, "area": "lectura"},
+    {"nombre": "Vol-08", "expertise": 3, "area": "grafismo"},
+    {"nombre": "Vol-09", "expertise": 3, "area": "grafismo"},
+    {"nombre": "Vol-10", "expertise": 2, "area": "grafismo"},
+    {"nombre": "Vol-11", "expertise": 2, "area": "matematica"},
+    {"nombre": "Vol-12", "expertise": 2, "area": "lectura"},
+]
+
+ESCENARIO_C = {
+    "nombre": "C - Reforzado",
+    "tiempo_simulacion": 52,
+    "semilla": 42,
+    "tasa_llegada": 1.0,                     # demanda baja + buenos recursos
+    "prob_dificultad": [0.55, 0.30, 0.15],
+    "prob_area": [0.40, 0.35, 0.25],
+    "voluntarios_spec": VOLUNTARIOS_REFORZADOS,
+    "num_profesionales": 4,                  # suficientes profesionales
+    "permitir_generalista": True,
+}
+
+# Escenario D: Demanda baja - pocos niños y mayoria leves.
+# Deberia dar voluntarios con ocupacion baja y poco mal matching.
+ESCENARIO_D = {
+    "nombre": "D - Demanda baja",
+    "tiempo_simulacion": 52,
+    "semilla": 42,
+    "tasa_llegada": 1.0,                     # pocos niños por semana
+    "prob_dificultad": [0.70, 0.25, 0.05],   # casi todos leves
+    "prob_area": [0.45, 0.35, 0.20],         # misma dist. de areas que Base
+    "voluntarios_spec": VOLUNTARIOS_BASE,
+    "num_profesionales": 3,                  # suficiente para no saturar
+    "permitir_generalista": True,
+}
+
 # Escenario extra: Base con politica estricta (sin generalista)
 # Seccion 4.2 del anteproyecto: comparar ambas politicas de asignacion
 ESCENARIO_BASE_ESTRICTO = {
@@ -596,9 +641,10 @@ def main():
     print("  Centro de Apoyo Escolar")
     print("  Universidad Catolica de Salta\n")
 
-    # Parte 1: Los 3 escenarios del anteproyecto (todos con generalista)
+    # Parte 1: Los 5 escenarios (todos con generalista)
     resultados_escenarios = []
-    for escenario in [ESCENARIO_BASE, ESCENARIO_A, ESCENARIO_B]:
+    for escenario in [ESCENARIO_BASE, ESCENARIO_A, ESCENARIO_B,
+                      ESCENARIO_C, ESCENARIO_D]:
         kpis = ejecutar_escenario(escenario)
         resultados_escenarios.append(kpis)
 

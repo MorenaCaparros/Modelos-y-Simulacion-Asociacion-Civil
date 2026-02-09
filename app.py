@@ -12,6 +12,8 @@ from simulacion_apoyo_escolar import (
     ESCENARIO_BASE,
     ESCENARIO_A,
     ESCENARIO_B,
+    ESCENARIO_C,
+    ESCENARIO_D,
     ESCENARIO_BASE_ESTRICTO,
 )
 
@@ -101,7 +103,8 @@ with st.sidebar:
     if modo == "Escenarios predefinidos":
         escenarios_sel = st.multiselect(
             "Escenarios a correr",
-            ["Base (Normal)", "A - Deficit", "B - Crecimiento", "Base (Estricto)"],
+            ["Base (Normal)", "A - Deficit", "B - Crecimiento",
+             "C - Reforzado", "D - Demanda baja", "Base (Estricto)"],
             default=["Base (Normal)", "A - Deficit", "B - Crecimiento"],
         )
     else:
@@ -162,6 +165,8 @@ MAPA_ESCENARIOS = {
     "Base (Normal)": ESCENARIO_BASE,
     "A - Deficit": ESCENARIO_A,
     "B - Crecimiento": ESCENARIO_B,
+    "C - Reforzado": ESCENARIO_C,
+    "D - Demanda baja": ESCENARIO_D,
     "Base (Estricto)": ESCENARIO_BASE_ESTRICTO,
 }
 
@@ -368,5 +373,7 @@ else:
         - **Base**: operacion normal (3 niños/sem, 8 vol, 2 prof)
         - **A - Deficit**: muchos casos graves, pocos voluntarios, 1 profesional
         - **B - Crecimiento**: 200% mas matricula, mismos recursos
+        - **C - Reforzado**: voluntarios expertos en todas las areas, 3 profesionales
+        - **D - Demanda baja**: mitad de llegadas, mayoria leves
         - **Base (Estricto)**: sin asignacion generalista (el niño espera o se va)
         """)

@@ -37,6 +37,8 @@ logica de asignacion antes de implementarla en software real.
 | Base | Operacion normal: 3 niños/sem, 8 voluntarios, 2 profesionales |
 | A - Deficit | Muchos niños graves, pocos voluntarios basicos, 1 profesional |
 | B - Crecimiento | 200% mas de matricula, mismos recursos |
+| C - Reforzado | 12 voluntarios expertos en todas las areas, 4 profesionales |
+| D - Demanda baja | Pocos niños, mayoria leves, recursos base |
 
 Ademas se comparan las dos politicas de asignacion:
 - **Generalista**: si no hay match optimo, se asigna cualquier voluntario libre.
